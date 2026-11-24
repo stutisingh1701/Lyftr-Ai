@@ -73,18 +73,16 @@ class Settings:
             path_str = url
 
         db_path = Path(path_str)
-        try:
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            # Test write access
-            test_file = db_path.parent / ".perm_check"
-            test_file.touch()
-            test_file.unlink()
-            return str(db_path.resolve())
-        except (OSError, PermissionError):
-            # Fallback to local directory
-            fallback = Path("./data/app.db").resolve()
-            fallback.parent.mkdir(parents=True, exist_ok=True)
-            return str(fallback)
+        for candidate in (db_path, Path("./data/app.db"), Path("/tmp/data/app.db")):
+            try:
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                test_file = candidate.parent / ".perm_check"
+                test_file.touch()
+                test_file.unlink()
+                return str(candidate.resolve())
+            except (OSError, PermissionError):
+                continue
+        return str(Path("/tmp/data/app.db"))
 
 
 settings = Settings()

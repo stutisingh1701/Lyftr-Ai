@@ -1,7 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -70,7 +70,10 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/health", response_model=HealthResponse)
+api_router = APIRouter()
+
+
+@api_router.get("/health", response_model=HealthResponse)
 def get_health():
     """
     Health check endpoint: Returns 200 once app running, DB reachable, key pool loaded.
@@ -88,7 +91,7 @@ def get_health():
     )
 
 
-@app.post("/chat", response_model=ChatResponse)
+@api_router.post("/chat", response_model=ChatResponse)
 def post_chat(
     req: ChatRequest,
     x_simulate_failure: Optional[str] = Header(None, alias="X-Simulate-Failure")
@@ -144,7 +147,7 @@ def post_chat(
     )
 
 
-@app.get("/sessions/{session_id}/messages", response_model=SessionHistoryResponse)
+@api_router.get("/sessions/{session_id}/messages", response_model=SessionHistoryResponse)
 def get_session_history(session_id: str):
     """
     Returns the stored history of one session from SQLite, oldest first, without the system prompt.
@@ -162,3 +165,8 @@ def get_session_history(session_id: str):
         session_id=session_id_clean,
         messages=messages
     )
+
+
+# Expose routes at both root (local/Docker/tests) and /api (Vercel services rewrite)
+app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
