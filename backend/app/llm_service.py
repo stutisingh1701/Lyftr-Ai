@@ -25,6 +25,11 @@ except (ImportError, Exception):
     sys.modules['litellm.rust_bridge._native'] = DummyModule('litellm.rust_bridge._native')
 
 import litellm
+from litellm import exceptions as litellm_exceptions
+try:
+    litellm.exceptions = litellm_exceptions
+except Exception:
+    pass
 from app.config import settings
 from app.cache_service import cache_service
 
@@ -68,6 +73,20 @@ def parse_simulate_failure_header(header_value: Optional[str]) -> Dict[str, int]
             except ValueError:
                 logger.warning(f"Invalid simulated status code string: {code_str}")
     return simulation_map
+
+
+def resolve_model_for_key(default_model: str, api_key: str) -> str:
+    """
+    Intelligently maps multi-provider keys to their matching LiteLLM models
+    when providers are mixed across keys in the pool (e.g. Gemini + OpenAI).
+    """
+    if api_key.startswith("sk-proj-") or (api_key.startswith("sk-") and not api_key.startswith("sk-ant-")):
+        return "gpt-4o-mini"
+    elif api_key.startswith("gsk_"):
+        return "groq/llama-3.3-70b-versatile"
+    elif api_key.startswith("AIzaSy") or api_key.startswith("AQ."):
+        return "gemini/gemini-3.5-flash-lite"
+    return default_model
 
 
 def estimate_tokens(text: str) -> int:
@@ -129,10 +148,11 @@ def execute_llm_completion(
             continue
 
         try:
-            # Live LiteLLM inference attempt
-            logger.info(f"Attempting inference with key '{key_id}' on model '{model}'")
+            # Resolve target model for this specific key
+            target_model = resolve_model_for_key(model, api_key)
+            logger.info(f"Attempting inference with key '{key_id}' on model '{target_model}'")
             response = litellm.completion(
-                model=model,
+                model=target_model,
                 messages=messages,
                 api_key=api_key,
                 timeout=30.0
