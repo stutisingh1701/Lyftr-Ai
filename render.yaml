@@ -1,0 +1,27 @@
+# Render Blueprint — Lyftr AI Backend
+# https://docs.render.com/blueprint-spec
+
+services:
+  - type: web
+    name: lyftr-ai-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_API_KEYS
+        sync: false                 # Set in Render dashboard: key_1:<key1>,key_2:<key2>
+      - key: LLM_MODEL
+        value: gemini/gemini-3.5-flash-lite
+      - key: DATABASE_URL
+        value: sqlite:////data/app.db
+      - key: ALLOWED_ORIGINS
+        sync: false                 # Set in Render dashboard to your Vercel URL (or * for testing)
+      - key: ENABLE_FAILURE_SIMULATION
+        value: "true"
+      - key: LITELLM_LOCAL_MODEL_COST_MAP
+        value: "true"
+    # Note: Render persistent disks require a paid plan (starter+).
+    # On the free plan, /data/app.db is created inside the container at startup.

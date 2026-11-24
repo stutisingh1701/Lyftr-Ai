@@ -15,16 +15,21 @@ class Settings:
         self.DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:////data/app.db")
         
         # LLM Model
-        self.LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini/gemini-1.5-flash")
+        self.LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini/gemini-3.5-flash-lite")
         
         # Raw API Keys string
         self.RAW_LLM_API_KEYS: str = os.getenv("LLM_API_KEYS", "key_1:test_key_1,key_2:test_key_2")
         
-        # Allowed origins for CORS
+        # Allowed origins for CORS (strip trailing slashes so pasted URLs match browser Origin headers)
         raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-        self.ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+        self.ALLOWED_ORIGINS: List[str] = [
+            origin.strip().rstrip("/") for origin in raw_origins.split(",") if origin.strip()
+        ]
         if "*" in self.ALLOWED_ORIGINS:
             self.ALLOWED_ORIGINS = ["*"]
+
+        # PORT – Render injects this; used by Dockerfile CMD
+        self.PORT: int = int(os.getenv("PORT", "8000"))
             
         # Failure simulation flag
         self.ENABLE_FAILURE_SIMULATION: bool = os.getenv("ENABLE_FAILURE_SIMULATION", "true").lower() in ("true", "1", "yes")

@@ -2,7 +2,7 @@
  * Lyftr AI API Client Service
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 export async function fetchHealth() {
   const response = await fetch(`${API_BASE_URL}/health`);

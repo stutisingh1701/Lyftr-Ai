@@ -19,6 +19,7 @@ COPY --from=builder /root/.local /home/appuser/.local
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV LITELLM_LOCAL_MODEL_COST_MAP=true
 
 # Copy application source
 COPY --chown=appuser:appuser . /app/
@@ -27,4 +28,5 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render injects $PORT; default to 8000 for local Docker Compose
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
